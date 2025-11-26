@@ -29,6 +29,18 @@ from core.prompts import (
     SYSTEM_PROMPT_CREATIVE
 )
 
+# Import MCP server modules
+from mcp_servers.screenplay_generator.story_analyzer import StoryStructureAnalyzer
+from mcp_servers.screenplay_generator.character_creator import CharacterProfileCreator
+from mcp_servers.screenplay_generator.scene_writer import ScreenplaySceneWriter
+from mcp_servers.storyboard_visualizer.moment_detector import KeyMomentDetector
+from mcp_servers.storyboard_visualizer.prompt_generator import VisualPromptGenerator
+
+# Import API clients
+from integrations.sambanova import SambaNovaClient
+from integrations.hyperbolic import HyperbolicClient
+from integrations.nebius import NebiusClient, CharacterConsistencyManager
+
 
 class FrameFlowAgent:
     """
@@ -37,17 +49,62 @@ class FrameFlowAgent:
 
     def __init__(self):
         """Initialize the FrameFlow agent with necessary clients"""
-        self.llm_client = None  # Will be initialized with SambaNova or other LLM
-        self.image_client = None  # Will be initialized with Hyperbolic
-        self.embedding_client = None  # Will be initialized with Nebius
         self.character_store: Dict[str, CharacterProfile] = {}
         self.output_dir = os.path.join(os.getcwd(), "outputs")
         os.makedirs(self.output_dir, exist_ok=True)
 
+        # Initialize API clients
+        self.llm_client = None
+        self.image_client = None
+        self.embedding_client = None
+
+        # Initialize MCP modules
+        self.story_analyzer = None
+        self.character_creator = None
+        self.scene_writer = None
+        self.moment_detector = None
+        self.prompt_generator = None
+        self.consistency_manager = None
+
+        # Initialize clients on first use
+        self._clients_initialized = False
+
     def _initialize_clients(self):
-        """Initialize API clients (placeholder for actual implementation)"""
-        # This will be implemented when we add the integration modules
-        pass
+        """Initialize API clients and MCP modules"""
+        if self._clients_initialized:
+            return
+
+        try:
+            # Initialize LLM client (SambaNova)
+            self.llm_client = SambaNovaClient()
+            print("✓ SambaNova LLM client initialized")
+        except Exception as e:
+            print(f"⚠ SambaNova client unavailable: {e}")
+
+        try:
+            # Initialize image client (Hyperbolic)
+            self.image_client = HyperbolicClient()
+            print("✓ Hyperbolic image client initialized")
+        except Exception as e:
+            print(f"⚠ Hyperbolic client unavailable: {e}")
+
+        try:
+            # Initialize embedding client (Nebius)
+            self.embedding_client = NebiusClient()
+            self.consistency_manager = CharacterConsistencyManager(self.embedding_client)
+            print("✓ Nebius embedding client initialized")
+        except Exception as e:
+            print(f"⚠ Nebius client unavailable: {e}")
+
+        # Initialize MCP modules
+        self.story_analyzer = StoryStructureAnalyzer(self.llm_client)
+        self.character_creator = CharacterProfileCreator(self.llm_client)
+        self.scene_writer = ScreenplaySceneWriter(self.llm_client)
+        self.moment_detector = KeyMomentDetector(self.llm_client)
+        self.prompt_generator = VisualPromptGenerator(self.llm_client)
+
+        self._clients_initialized = True
+        print("✓ All MCP modules initialized")
 
     async def generate_screenplay(self, story_input: StoryInput) -> ScreenplayOutput:
         """
@@ -59,6 +116,9 @@ class FrameFlowAgent:
         Returns:
             ScreenplayOutput with complete screenplay
         """
+        # Initialize clients if not already done
+        self._initialize_clients()
+
         print(f"🎬 Starting screenplay generation for {story_input.genre} story...")
 
         # Step 1: Analyze story
@@ -116,6 +176,9 @@ class FrameFlowAgent:
         Returns:
             StoryboardOutput with generated frames
         """
+        # Initialize clients if not already done
+        self._initialize_clients()
+
         print(f"🎨 Starting storyboard generation ({num_frames} frames)...")
 
         # Step 1: Identify key moments
@@ -145,29 +208,32 @@ class FrameFlowAgent:
 
     async def _analyze_story(self, story_input: StoryInput) -> Dict[str, Any]:
         """
-        Analyze story prompt and extract key elements
+        Analyze story prompt and extract key elements using story analyzer
 
         Returns a dictionary with story analysis
         """
-        # Placeholder implementation
-        # In real implementation, this would call the screenplay-generator MCP server
-        return {
-            "main_theme": "Personal growth and redemption",
-            "conflict": "Internal and external obstacles",
-            "protagonist": "A determined individual",
-            "antagonist": "Forces of opposition",
-            "setting": "Contemporary urban setting",
-            "key_plot_points": [
-                "Inciting incident",
-                "First turning point",
-                "Midpoint reversal",
-                "Dark night of the soul",
-                "Climax",
-                "Resolution"
-            ],
-            "suggested_acts": ["Setup", "Confrontation", "Resolution"],
-            "logline": f"A {story_input.genre.lower()} story about {story_input.prompt[:100]}..."
-        }
+        if self.story_analyzer:
+            # Use MCP story analyzer module
+            return await self.story_analyzer.analyze(story_input)
+        else:
+            # Fallback implementation
+            return {
+                "main_theme": "Personal growth and redemption",
+                "conflict": "Internal and external obstacles",
+                "protagonist": "A determined individual",
+                "antagonist": "Forces of opposition",
+                "setting": "Contemporary urban setting",
+                "key_plot_points": [
+                    "Inciting incident",
+                    "First turning point",
+                    "Midpoint reversal",
+                    "Dark night of the soul",
+                    "Climax",
+                    "Resolution"
+                ],
+                "suggested_acts": ["Setup", "Confrontation", "Resolution"],
+                "logline": f"A {story_input.genre.lower()} story about {story_input.prompt[:100]}..."
+            }
 
     async def _create_characters(
         self,
@@ -175,37 +241,46 @@ class FrameFlowAgent:
         genre: str
     ) -> List[CharacterProfile]:
         """
-        Create character profiles based on story analysis
+        Create character profiles using character creator module
 
         Returns list of CharacterProfile objects
         """
-        # Placeholder implementation
-        characters = [
-            CharacterProfile(
-                name="Alex Morgan",
-                age=32,
-                role="protagonist",
-                description="A resourceful detective with a troubled past",
-                personality_traits=["determined", "intelligent", "haunted", "compassionate"],
-                visual_description="Tall, athletic build, short dark hair, piercing blue eyes, typically wears a leather jacket and jeans",
-                motivation="To find redemption by solving this case",
-                arc="From cynical loner to team player who learns to trust"
-            ),
-            CharacterProfile(
-                name="Dr. Sarah Chen",
-                age=38,
-                role="supporting",
-                description="Brilliant forensic psychologist",
-                personality_traits=["analytical", "empathetic", "patient", "insightful"],
-                visual_description="Medium height, elegant demeanor, long black hair usually in a bun, professional attire",
-                motivation="To understand the criminal mind",
-                arc="Learns to trust her instincts over pure logic"
+        if self.character_creator:
+            # Use MCP character creator module
+            characters = await self.character_creator.create_characters(
+                story_analysis=story_analysis,
+                genre=genre,
+                num_characters=3
             )
-        ]
+        else:
+            # Fallback implementation
+            characters = [
+                CharacterProfile(
+                    name="Alex Morgan",
+                    age=32,
+                    role="protagonist",
+                    description="A resourceful detective with a troubled past",
+                    personality_traits=["determined", "intelligent", "haunted", "compassionate"],
+                    visual_description="Tall, athletic build, short dark hair, piercing blue eyes, typically wears a leather jacket and jeans",
+                    motivation="To find redemption by solving this case",
+                    arc="From cynical loner to team player who learns to trust"
+                )
+            ]
 
         # Store characters for consistency
         for char in characters:
             self.character_store[char.name] = char
+
+            # Store in consistency manager if available
+            if self.consistency_manager:
+                try:
+                    await self.consistency_manager.store_character(
+                        character_name=char.name,
+                        visual_description=char.visual_description,
+                        metadata={"age": char.age, "role": char.role}
+                    )
+                except:
+                    pass  # Continue even if embedding storage fails
 
         return characters
 
@@ -223,48 +298,42 @@ class FrameFlowAgent:
         genre: str
     ) -> List[Scene]:
         """
-        Write screenplay scenes based on story analysis
+        Write screenplay scenes using scene writer module
 
         Returns list of Scene objects
         """
-        # Placeholder implementation
-        # In real implementation, this would generate multiple scenes based on the structure
-        scenes = [
-            Scene(
-                scene_number=1,
-                location=SceneLocation(
-                    setting="INT",
-                    location="DETECTIVE'S OFFICE",
-                    time="DAY"
-                ),
-                action="The office is cluttered with case files and cold coffee cups. ALEX MORGAN sits at the desk, staring at crime scene photos spread across the surface.",
-                dialogue=[
-                    DialogueLine(
-                        character="ALEX",
-                        line="Three victims. Three different cities. Same signature.",
-                        parenthetical="to himself"
-                    ),
-                    DialogueLine(
-                        character="DR. CHEN",
-                        line="You're seeing a pattern the others missed."
-                    ),
-                    DialogueLine(
-                        character="ALEX",
-                        line="Or I'm seeing things that aren't there. Wouldn't be the first time."
-                    )
-                ]
-            ),
-            Scene(
-                scene_number=2,
-                location=SceneLocation(
-                    setting="EXT",
-                    location="CITY STREET",
-                    time="NIGHT"
-                ),
-                action="Rain pours down on the empty street. Alex walks alone, collar turned up against the weather. A figure watches from the shadows.",
-                dialogue=[]
+        scenes = []
+
+        if self.story_analyzer and self.scene_writer:
+            # Identify key scenes from story analysis
+            scene_outlines = self.story_analyzer.identify_key_scenes(
+                story_analysis,
+                num_scenes=8  # Generate 8 scenes for a short screenplay
             )
-        ]
+
+            # Write each scene
+            for outline in scene_outlines:
+                scene = await self.scene_writer.write_scene(
+                    scene_outline=outline,
+                    characters=characters,
+                    dialogue_style=dialogue_style,
+                    genre=genre
+                )
+                scenes.append(scene)
+        else:
+            # Fallback: create basic scenes
+            scenes = [
+                Scene(
+                    scene_number=1,
+                    location=SceneLocation(
+                        setting="INT",
+                        location="LOCATION",
+                        time="DAY"
+                    ),
+                    action=f"The story begins in {story_analysis.get('setting', 'a location')}.",
+                    dialogue=[]
+                )
+            ]
 
         return scenes
 
@@ -274,21 +343,28 @@ class FrameFlowAgent:
         num_frames: int
     ) -> List[Dict[str, Any]]:
         """
-        Identify key moments in screenplay for storyboard frames
+        Identify key moments using moment detector module
 
         Returns list of moment descriptions
         """
-        # Placeholder implementation
-        moments = []
-        for i in range(num_frames):
-            moments.append({
-                "scene_number": i + 1,
-                "description": f"Key moment {i + 1} from the screenplay",
-                "emotional_tone": "dramatic",
-                "characters": ["Alex Morgan"],
-                "setting": "Detective's office" if i % 2 == 0 else "City street"
-            })
-        return moments
+        if self.moment_detector:
+            # Use MCP moment detector module
+            return self.moment_detector.identify_key_moments(
+                screenplay_text,
+                num_frames
+            )
+        else:
+            # Fallback implementation
+            moments = []
+            for i in range(num_frames):
+                moments.append({
+                    "scene_number": i + 1,
+                    "description": f"Key moment {i + 1} from the screenplay",
+                    "emotional_tone": "dramatic",
+                    "characters": [],
+                    "setting": "Location"
+                })
+            return moments
 
     async def _generate_storyboard_frame(
         self,
@@ -297,23 +373,59 @@ class FrameFlowAgent:
         visual_style: str
     ) -> StoryboardFrame:
         """
-        Generate a single storyboard frame
+        Generate a single storyboard frame with image
 
         Returns StoryboardFrame object
         """
-        # Placeholder implementation
-        # In real implementation, this would:
-        # 1. Generate visual prompt using storyboard-visualizer MCP server
-        # 2. Create image using Hyperbolic API
-        # 3. Save image and return frame
+        # Get camera angle suggestion
+        camera_angle = "Medium Shot"
+        if self.moment_detector:
+            camera_angle = self.moment_detector.suggest_camera_angles(moment)
+
+        # Generate visual prompt
+        visual_prompt = f"{visual_style} style storyboard frame: {moment['description']}"
+        if self.prompt_generator:
+            # Get character data for consistency
+            char_data = [
+                {"name": name, "visual_description": self.get_character_consistency(name) or f"character {name}"}
+                for name in moment.get("characters", [])
+            ]
+
+            visual_prompt = self.prompt_generator.generate_visual_prompt(
+                moment=moment,
+                visual_style=visual_style,
+                camera_angle=camera_angle,
+                characters=char_data if char_data else None
+            )
+
+        # Generate image
+        image_path = None
+        if self.image_client:
+            try:
+                # Generate image
+                image_bytes = await self.image_client.generate_storyboard_frame(
+                    prompt=visual_prompt,
+                    style=visual_style.lower(),
+                    aspect_ratio="16:9",
+                    quality="standard"
+                )
+
+                # Save image
+                frame_filename = f"frame_{frame_number:03d}.png"
+                image_path = os.path.join(self.output_dir, frame_filename)
+                await self.image_client.save_image(image_bytes, image_path)
+
+                print(f"  ✓ Generated image: {image_path}")
+            except Exception as e:
+                print(f"  ⚠ Image generation failed: {e}")
 
         frame = StoryboardFrame(
             frame_number=frame_number,
-            scene_reference=moment["scene_number"],
-            description=moment["description"],
-            camera_angle="Medium Shot",
-            visual_prompt=f"{visual_style} style storyboard frame: {moment['description']}",
-            image_path=None,  # Would be actual path after generation
+            scene_reference=moment.get("scene_number", frame_number),
+            description=moment.get("description", "Scene description"),
+            camera_angle=camera_angle,
+            visual_prompt=visual_prompt,
+            image_path=image_path,
             image_url=None
         )
 

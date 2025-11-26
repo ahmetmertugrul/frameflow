@@ -18,31 +18,75 @@ agent = FrameFlowAgent()
 # Custom CSS for better UI
 custom_css = """
 .container {
-    max-width: 1200px;
+    max-width: 1400px;
     margin: 0 auto;
 }
 
 .header {
     text-align: center;
-    padding: 2rem 0;
+    padding: 2.5rem 0;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
-    border-radius: 10px;
+    border-radius: 12px;
     margin-bottom: 2rem;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.header h1 {
+    font-size: 2.5rem;
+    margin-bottom: 0.5rem;
+    font-weight: 700;
+}
+
+.header p {
+    font-size: 1.1rem;
+    opacity: 0.95;
 }
 
 .output-section {
     margin-top: 2rem;
-    padding: 1rem;
-    border: 1px solid #e0e0e0;
-    border-radius: 8px;
+    padding: 1.5rem;
+    border: 2px solid #e0e0e0;
+    border-radius: 10px;
+    background: #ffffff;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
 
 .storyboard-frame {
     margin: 1rem 0;
-    padding: 1rem;
+    padding: 1.5rem;
     background: #f8f9fa;
+    border-radius: 10px;
+    border-left: 4px solid #667eea;
+}
+
+.status-box {
+    padding: 1rem;
     border-radius: 8px;
+    margin: 1rem 0;
+    font-family: monospace;
+}
+
+.status-success {
+    background: #d4edda;
+    border-left: 4px solid #28a745;
+    color: #155724;
+}
+
+.status-error {
+    background: #f8d7da;
+    border-left: 4px solid #dc3545;
+    color: #721c24;
+}
+
+.status-info {
+    background: #d1ecf1;
+    border-left: 4px solid #17a2b8;
+    color: #0c5460;
+}
+
+.tab-nav button {
+    font-weight: 500;
 }
 """
 
