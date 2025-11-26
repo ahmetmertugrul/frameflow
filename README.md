@@ -210,8 +210,55 @@ frameflow/
 
 ### Running Tests
 
+FrameFlow includes a comprehensive test suite with 110+ test cases covering all core functionality.
+
+**Run all tests:**
 ```bash
 pytest tests/
+```
+
+**Run with coverage report:**
+```bash
+pytest tests/ --cov=core --cov=integrations --cov=mcp_servers --cov-report=html
+```
+
+**Run specific test files:**
+```bash
+# Schema tests only
+pytest tests/test_schemas.py -v
+
+# Prompt tests only
+pytest tests/test_prompts.py -v
+
+# Agent tests only
+pytest tests/test_agent.py -v
+
+# Integration tests only
+pytest tests/test_integrations.py -v
+```
+
+**Run with markers:**
+```bash
+# Run only unit tests (exclude integration tests)
+pytest tests/ -m "not integration"
+
+# Run only integration tests (requires API keys)
+pytest tests/ -m integration
+
+# Run only async tests
+pytest tests/ -m asyncio
+```
+
+**Test Coverage:**
+- ✅ **Core**: schemas, prompts, agent orchestration
+- ✅ **Integrations**: SambaNova, Hyperbolic, Nebius clients
+- ✅ **MCP Servers**: screenplay generator tools
+- ✅ **Edge Cases**: validation, error handling, async operations
+
+**View HTML coverage report:**
+```bash
+pytest tests/ --cov-report=html
+open htmlcov/index.html  # Opens in browser
 ```
 
 ### Deploying to Modal
