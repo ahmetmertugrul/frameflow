@@ -23,12 +23,8 @@ image = (
     )
 )
 
-# Define secrets
-secrets = [
-    modal.Secret.from_name("sambanova-api-key"),
-    modal.Secret.from_name("hyperbolic-api-key"),
-    modal.Secret.from_name("nebius-api-key"),
-]
+# Define secrets - all API keys in one secret
+secrets = [modal.Secret.from_name("frameflow-secrets")]
 
 
 # GPU function for image generation
