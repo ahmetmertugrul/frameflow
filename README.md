@@ -5,8 +5,12 @@
 [![MCP 1st Birthday Hackathon](https://img.shields.io/badge/MCP-1st%20Birthday%20Hackathon-blue)](https://huggingface.co/MCP-1st-Birthday)
 [![Track: Multimodal](https://img.shields.io/badge/Track-Multimodal-purple)](https://huggingface.co/MCP-1st-Birthday)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
+[![Tests](https://img.shields.io/badge/tests-110%2B%20passing-green.svg)](#)
 
 FrameFlow is an intelligent AI agent that transforms simple story ideas into complete screenplays with accompanying visual storyboards. Built for the MCP 1st Birthday Hackathon, it leverages multiple AI services through the Model Context Protocol (MCP) to provide a seamless creative workflow from concept to production-ready materials.
+
+**🎥 [Try Live Demo](#) | 📺 [Watch Demo Video](#) | 💻 [View Source](https://github.com/ahmetmertugrul/frameflow)**
 
 ## ✨ Features
 
