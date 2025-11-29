@@ -13,7 +13,7 @@ image = (
     modal.Image.debian_slim(python_version="3.11")
     .apt_install("git")  # Install git
     .pip_install(
-        "gradio>=6.0.0",
+        "gradio==4.44.0",  # Stable version compatible with css parameter
         "pydantic>=2.5.0",
         "python-dotenv>=1.0.0",
         "httpx>=0.25.0",
@@ -22,6 +22,8 @@ image = (
         "reportlab>=4.0.0",
         "mcp>=0.9.0",
         "chromadb>=0.4.0",
+        "aiohttp>=3.9.0",
+        "python-slugify>=8.0.0",
     )
     .run_commands(
         "cd /root && git clone https://github.com/ahmetmertugrul/frameflow.git",
