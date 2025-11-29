@@ -4,9 +4,31 @@ Deploys Gradio app with GPU support for image generation
 """
 
 import modal
+from pathlib import Path
 
 # Create Modal app
 app = modal.App("frameflow")
+
+# Mount the entire project directory
+project_root = Path(__file__).parent
+mounts = [
+    modal.Mount.from_local_dir(
+        project_root / "core",
+        remote_path="/root/core"
+    ),
+    modal.Mount.from_local_dir(
+        project_root / "integrations",
+        remote_path="/root/integrations"
+    ),
+    modal.Mount.from_local_dir(
+        project_root / "mcp_servers",
+        remote_path="/root/mcp_servers"
+    ),
+    modal.Mount.from_local_file(
+        project_root / "app.py",
+        remote_path="/root/app.py"
+    ),
+]
 
 # Define image with all dependencies
 image = (
@@ -20,6 +42,7 @@ image = (
         "numpy>=1.24.0",
         "reportlab>=4.0.0",
         "mcp>=0.9.0",
+        "chromadb>=0.4.0",
     )
 )
 
@@ -32,7 +55,8 @@ secrets = [modal.Secret.from_name("frameflow-secrets")]
     image=image,
     gpu="T4",  # Use T4 GPU for image generation
     timeout=600,  # 10 minute timeout
-    secrets=secrets
+    secrets=secrets,
+    mounts=mounts
 )
 async def generate_storyboard_frame(prompt: str, style: str):
     """Generate a single storyboard frame using GPU"""
@@ -54,15 +78,17 @@ async def generate_storyboard_frame(prompt: str, style: str):
 @app.function(
     image=image,
     secrets=secrets,
-    keep_warm=1,  # Keep one instance warm
+    min_containers=1,  # Keep one instance warm (updated from keep_warm)
     timeout=1800,  # 30 minute timeout for long screenplay generation
+    mounts=mounts
 )
 @modal.asgi_app()
 def gradio_app():
     """Gradio web interface"""
-    import gradio as gr
-    from app import demo  # Import the Gradio demo from app.py
+    import sys
+    sys.path.insert(0, "/root")  # Add project root to Python path
 
+    from app import demo  # Import the Gradio demo from app.py
     return demo
 
 
